@@ -6,7 +6,8 @@ A simple program to track study time, so it can be parsed by
 org mode in emacs.
 
 To compile:
-    This lang is gnu C. Use gcc to compile it.
+    This lang is gnu C. Use gcc to compile it. Designed to run
+    on debain based distros. Will also run on WSL.
 
 Use:
     - Use without arguments to get an hr:min:sec timer.
@@ -47,7 +48,7 @@ int main(int argc, char** argv)
         strftime(buffer, 80, "%A:%Y:%j:%X", timeinfo);
         file_name = concat(argv[1], buffer);
         file_name = concat(file_name, ".csv"); // lazy leak
-        fp = fopen(file_name, "w+");
+        //fp = fopen(file_name, "w+");
     }
 
     int hours(double diff)
@@ -69,19 +70,23 @@ int main(int argc, char** argv)
         return (int) diff;
     }
 
+    // C-z to stop display, C-c to kill program
     while(1)
     {
         current_time = time(NULL);
         diff = difftime(current_time, start_time);
 
-        system("clear");
+        system("clear"); // portable screen clearing is a pain
         if(argc == 2)
         {
+            // screen print
             printf(
                 "[%s]%i:%i:%i\n", argv[1],
                 hours(diff),
                 minutes(diff),
                 seconds(diff));
+
+            // file print
             fp = fopen(file_name, "w+");
             fprintf(fp,
                     "[%s],%i,%i,%i\n", argv[1],
@@ -98,7 +103,7 @@ int main(int argc, char** argv)
         sleep(1);
     }
 
-    // clean up
+    // clean up, that never happens
     free(file_name);
     fclose(fp);
     free(file_name);
