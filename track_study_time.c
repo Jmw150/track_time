@@ -11,9 +11,8 @@ To compile:
 
 Use:
     - Use without arguments to get an hr:min:sec timer.
-    - Use with name of study topic to get a named timer.
-      This will also write to a timestamped csv file by
-      the same name.
+    - Use with name of study topic to get a named timer
+      in a timestamped csv file..
 */
 
 #include <stdio.h>
@@ -40,15 +39,20 @@ int main(int argc, char** argv)
     }
 
     char* file_name;
+    char* el_file_name;
+    char* csv_file_name;
     if(argc == 2)
     {
+        // random juggling to make name
         struct tm* timeinfo;
         timeinfo = localtime(&start_time);
         char buffer[80];
-        strftime(buffer, 80, "%A:%Y:%j:%X", timeinfo);
+        strftime(buffer, 80, "_%A:%Y:%j:%X", timeinfo);
+
         file_name = concat(argv[1], buffer);
-        file_name = concat(file_name, ".csv"); // lazy leak
-        //fp = fopen(file_name, "w+");
+        el_file_name = concat(file_name, ".el"); // emacs lisp file
+        csv_file_name = concat(file_name, ".csv"); // csv file
+        printf("tracking: %s\n", argv[1]);
     }
 
     int hours(double diff)
@@ -76,24 +80,45 @@ int main(int argc, char** argv)
         current_time = time(NULL);
         diff = difftime(current_time, start_time);
 
-        system("clear"); // portable screen clearing is a pain
         if(argc == 2)
         {
+            // to print to screen
+            //{
+            /*
+            system("clear"); // portable screen clearing is a pain
             // screen print
             printf(
                 "[%s]%i:%i:%i\n", argv[1],
                 hours(diff),
                 minutes(diff),
                 seconds(diff));
+            */
+            //}
 
-            // file print
-            fp = fopen(file_name, "w+");
+            // csv file print
+            //{
+            fp = fopen(csv_file_name, "w+");
             fprintf(fp,
-                    "[%s],%i,%i,%i\n", argv[1],
+                    "%s,%i,%i,%i\n", 
+                    argv[1],
                     hours(diff),
                     minutes(diff),
                     seconds(diff));
             fclose(fp); // bit of processor waste
+            //}
+
+            // lisp file print
+            //{
+            fp = fopen(el_file_name, "w+");
+            fprintf(fp,
+                    "(+ %i (/ %i 60.0))\n", 
+                    //argv[1],
+                    hours(diff),
+                    minutes(diff)
+                    //seconds(diff)
+                    );
+            fclose(fp); // bit of processor waste
+            //}
         }
         else
             printf("%i:%i:%i\n",
