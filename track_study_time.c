@@ -1,18 +1,18 @@
 /*
 Made by: Jordan Winkler
-Sat Oct 24 13:24:06 EDT 2020
+Sun Nov  1 03:31:05 EST 2020
 
 A simple program to track study time, so it can be parsed by
 org mode in emacs.
 
-To compile:
-    This lang is gnu C. Use gcc to compile it. Designed to run
-    on debain based distros. Will also run on WSL.
+To build:
+    - This lang is gnu C. Use gcc to compile it. Designed to run
+      on debain based distros. Will also run on WSL.
 
-Use:
+To use:
     - Use without arguments to get an hr:min:sec timer.
     - Use with name of study topic to get a named timer
-      in a timestamped csv file..
+      in timestamped csv and el files.
 */
 
 #include <stdio.h>
@@ -21,6 +21,8 @@ Use:
 #include <time.h>
 #include <string.h>
 
+// It is gnu c, so all functions are simply in main, for ease 
+// and removal from scope
 int main(int argc, char** argv)
 {
     time_t start_time = time(NULL);
@@ -28,22 +30,28 @@ int main(int argc, char** argv)
     double diff; // diff of start of program to call
     FILE* fp; // for potential csv file later
 
+    // contains a malloc. Free the return after
     char* concat(const char* s1, const char* s2)
     {
         char* result = malloc(strlen(s1) + strlen(s2) +
                               1); // +1 for the null-terminator
-        // in real code you would check for errors in malloc here
+
+        // TODO: check for errors in malloc here
+
         strcpy(result, s1);
         strcat(result, s2);
+
         return result;
     }
 
-    char* file_name;
-    char* el_file_name;
-    char* csv_file_name;
-    if(argc == 2)
+    char* file_name; // general name
+    char* el_file_name;  // extension added
+    char* csv_file_name; // 
+
+    // if study type was not given, do not save data
+    if(argc == 2) 
     {
-        // random juggling to make name
+        // some pointer juggling to make the name
         struct tm* timeinfo;
         timeinfo = localtime(&start_time);
         char buffer[80];
@@ -52,6 +60,8 @@ int main(int argc, char** argv)
         file_name = concat(argv[1], buffer);
         el_file_name = concat(file_name, ".el"); // emacs lisp file
         csv_file_name = concat(file_name, ".csv"); // csv file
+
+        // leave a prompt so the user knows what is being tracked
         printf("tracking: %s\n", argv[1]);
     }
 
@@ -75,6 +85,7 @@ int main(int argc, char** argv)
     }
 
     // C-z to stop display, C-c to kill program
+    // loop timediff calculation, and printing
     while(1)
     {
         current_time = time(NULL);
@@ -128,8 +139,10 @@ int main(int argc, char** argv)
         sleep(1);
     }
 
-    // clean up, that never happens
+    // clean up, that never happens, but good practice
     free(file_name);
+    free(el_file_name);
+    free(csv_file_name);
     fclose(fp);
     free(file_name);
 }
