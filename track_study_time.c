@@ -28,7 +28,14 @@ To use:
 
 // garbage collector
 // {
+
+// TODO: figure out why standard C functions are not working with the garbage collector
+// or
+//   TODO: make more portable versions of each of the C standard functions
+
+// TODO: make number some register multiple
 #define MEM_SIZE 500
+
 char _gc_mem[MEM_SIZE];
 int _mem_index = 0;
 void* gc_malloc(size_t n)
@@ -77,8 +84,9 @@ void* safe_malloc(size_t n)
 char* concat(const char* s1, const char* s2)
 {
     // +1 for the null-terminator
-    char* result = safe_gc_malloc(strlen(s1) + strlen(s2) + 1);
+    char* result = safe_malloc(strlen(s1) + strlen(s2) + 1);
 
+    //printf("strlen s1: %ld\n", strlen(s1));
     strcpy(result, s1);
     strcat(result, s2);
 
@@ -131,6 +139,7 @@ int main(int argc, char** argv)
         strftime(buffer, 80, "_%A:%Y:%j:%X", timeinfo);
 
         file_name = concat(argv[1], buffer);
+        // TODO: check if file exists first
         data_file_name = concat("data/", file_name); // storing it in a folder
         el_file_name = concat(data_file_name, ".el"); // emacs lisp file
         csv_file_name = concat(data_file_name, ".csv"); // csv file
