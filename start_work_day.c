@@ -1,30 +1,44 @@
-/*
-Made by: Jordan Winkler
-Fri Dec 25 15:37:31 EST 2020
+// code to track a work day
 
-A simple program to track study time, so it can be parsed by
-org mode in emacs.
-
-To build:
-    - make sure to have a file called data
-    - This language is gnu C. Use gcc to compile it. Designed to run
-      on Debian based distros. Will also run on WSL.
-
-To use:
-    - Use without arguments to get an hr:min:sec timer.
-    - Use with name of study topic to get a named timer
-      in timestamped csv and el files.
-*/
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
-#include <string.h>
-#include <iso646.h> // predicate shorthand
+#include <stdio.h>   // io
+#include <dirent.h>  // directory manipulations
+#include <sys/types.h>
+#include <sys/stat.h> // typical bash commands
+#include <stdlib.h>  // malloc and free
+#include <unistd.h>  // constants and types
+#include <time.h>    // computer time
+#include <string.h>  // string parsing functions
+#include <iso646.h>  // predicate shorthand
+#include <errno.h>   // error codes
 
 // helper functions
 // {
+
+int make_directory(char* filename)
+{
+    return mkdir(filename, 0700);
+}
+
+int isdir(char* file_name)
+{
+    DIR* dir = opendir(file_name);
+
+    if(dir)
+    {
+        closedir(dir);
+        return 1;
+    }
+    else if(ENOENT == errno)
+    {
+        return 0;
+    }
+    else     // failed for some reason
+    {
+        return -1;
+    }
+
+    return 0;
+}
 
 // garbage collector
 // {
@@ -40,10 +54,11 @@ char _gc_mem[MEM_SIZE];
 int _mem_index = 0;
 void* gc_malloc(size_t n)
 {
-    if (n <= (MEM_SIZE - _mem_index))
+    // location of free memory left
+    if(n <= (MEM_SIZE - _mem_index))
     {
         _mem_index += n;
-        return (void*) &(_gc_mem[n]);
+        return (void*) & (_gc_mem[n]);
     }
     else
     {
@@ -86,7 +101,7 @@ char* concat(const char* s1, const char* s2)
     // +1 for the null-terminator
     char* result = safe_malloc(strlen(s1) + strlen(s2) + 1);
 
-    //printf("strlen s1: %ld\n", strlen(s1));
+    // printf("strlen s1: %ld\n", strlen(s1));
     strcpy(result, s1);
     strcat(result, s2);
 
@@ -111,13 +126,16 @@ int seconds(double diff)
     diff = (int)diff % (60);
     return (int) diff;
 }
+
+
 // }
 
-// It is gnu c, so all functions are simply in main, for ease
-// and removal from scope
 int main(int argc, char** argv)
 {
+    // TODO: get this to parse on start, make portable
+
     // declarations
+    #define HOME "/home/jordan/backup/code/"
     time_t start_time = time(NULL);
     time_t current_time = time(NULL);
     double diff; // diff of start of program to call
@@ -126,23 +144,37 @@ int main(int argc, char** argv)
     char* file_name; // general name
     char* data_file_name; // general name
     char* el_file_name;  // extension added
-    char* csv_file_name; //
+    char* csv_file_name; // comma separated values
+    char* py_file_name; // python
 
     // if study type was not given, do not save data
     // TODO: parse input for acceptable forms
     if(argc == 2)
     {
-        // some pointer juggling to make the name
-        struct tm* timeinfo;
-        timeinfo = localtime(&start_time);
-        char buffer[80];
-        strftime(buffer, 80, "_%A:%Y:%j:%X", timeinfo);
+        char* name = argv[1];
 
-        file_name = concat(argv[1], buffer);
-        // TODO: check if file exists first
-        data_file_name = concat("data/", file_name); // storing it in a folder
-        el_file_name = concat(data_file_name, ".el"); // emacs lisp file
+        {
+            char buffer[80];
+
+            // some pointer juggling to make the name
+            struct tm* timeinfo = localtime(&start_time);
+            strftime(buffer, 80, "_%A:%Y:%j:%X", timeinfo);
+
+            file_name = concat(name, buffer);
+        }
+
+        // make sure file exists
+        if(not isdir(HOME "data"))
+        {
+            make_directory(HOME "data");
+        }
+
+        data_file_name = concat(HOME "data/",
+                                file_name); // storing it in a folder
+        el_file_name = concat(data_file_name,
+                              ".el"); // emacs lisp file
         csv_file_name = concat(data_file_name, ".csv"); // csv file
+        py_file_name = concat(data_file_name, ".py"); // csv file
 
         // leave a prompt so the user knows what is being tracked
         printf("tracking: %s\n", argv[1]);
@@ -195,6 +227,19 @@ int main(int argc, char** argv)
                    );
             fclose(fp); // bit of processor waste
             //}
+            
+            // python file print
+            //{
+            fp = fopen(py_file_name, "w+");
+            fprintf(fp,
+                    "{ \"filename\" : \"%s\", \"hours\" : %i, \"minutes\" : %i, \"seconds\" : %i }\n",
+                    file_name,
+                    hours(diff),
+                    minutes(diff),
+                    seconds(diff)
+                   );
+            fclose(fp); // bit of processor waste
+            //}
         }
         else
             printf("%i:%i:%i\n",
@@ -209,6 +254,9 @@ int main(int argc, char** argv)
     free(file_name);
     free(el_file_name);
     free(csv_file_name);
+    free(py_file_name);
     fclose(fp);
     free(file_name);
+    return 0;
 }
+
