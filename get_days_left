@@ -1,0 +1,10 @@
+#!/bin/env python3
+
+import time as t
+import mainlib as st
+
+#while True :
+print(st.get_days_left())
+#    t.sleep(10)
+
+

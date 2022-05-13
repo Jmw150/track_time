@@ -1,0 +1,6 @@
+#!/bin/env python3
+
+import time as t
+import present_time as st
+
+print(st.day_schedule())

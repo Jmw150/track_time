@@ -1,0 +1,6 @@
+#!/bin/env python3
+
+import time as t
+import mainlib as st
+
+print(st.total_schedule())
