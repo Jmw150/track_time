@@ -1,13 +1,14 @@
-#!/usr/bin/python3
+# #!/usr/bin/python3
 
 import time
 import math
 
 time_per_day = 10  # in hours
-semester = ["Work"]  # categories for the semester
-semester_ends = 160 #150 #120  # last year-day of spring classes
+work_categories = ["Work"]  # categories for the time
+time_starts = 0 
+time_ends = 365 #150 #120  # last year-day of spring classes
 is_today = time.localtime().tm_yday
-days_left = semester_ends - is_today
+days_left = time_ends - is_today
 
 # helper functions
 # {{{
@@ -96,52 +97,17 @@ def clock_hour(hours):
 
 # }}}
 
-def print_total_schedule(
-    work_done_total,
-    start_of_semester = 129,
-    end = 365):
-
-    # present data (set size of data too)
-    bar_len = len("000:00:00 of expected 000 hours") + 1  # box line end
-
-    presentation  = bar_len * "=" + "\n"
-    presentation += "Time worked this year\n"
-    presentation += bar_len * "=" + "\n"
-
-    for day in range(0,len(work_done_total)):
-        if work_done_total[day] > 0:               # skip no work days
-            presentation += daycal(day)
-            if work_done_total[day] < 10 * 60 * 60: # x < 10 hours -> space
-                presentation += " "
-            presentation += (
-                "   "
-                + str(clock_sec(work_done_total[day]))
-                + "    "
-                + dots(work_done_total[day])
-                + "|\n"
-            )
-
-    presentation += bar_len * "=" + "\n"
-    presentation += (
-        str(clock_sec(sum(work_done_total)))
-        + " of expected "
-        + str(((is_today - start_of_semester) * time_per_day))
-        + " hours\n"
-    )
-    presentation += bar_len * "="
-
-    return presentation
-
-def total_schedule(semester=semester):
-    "create a chart for the semester"
+# TODO: needs to cover all time
+def total_schedule(work_categories=work_categories):
+    "create a chart for the time"
     # {{{
 
     data = clean_data() # input from file
-    semester = pad_strings(semester)
+    work_categories = pad_strings(work_categories)
 
     # filter for selected days from total data
     work_done_total = []
-    for j in range(0, semester_ends): 
+    for j in range(0, time_ends): # iterator starts from year start
 
         # get data
         day = []
@@ -152,9 +118,9 @@ def total_schedule(semester=semester):
         # compute data
         day_hour_total = 0
         # pulling from jobs on the list and adding them to the total
-        for ind_semester in range(len(semester)):
+        for ind_time in range(len(work_categories)):
             for ind_day in range(len(day)):
-                if semester[ind_semester] == day[ind_day]["task"]:
+                if work_categories[ind_time] == day[ind_day]["task"]:
                     day_hour_total += (
                         (day[ind_day]["hours"]) * 60 * 60
                         + (day[ind_day]["minutes"]) * 60
@@ -164,23 +130,82 @@ def total_schedule(semester=semester):
         # save data
         work_done_total.append(day_hour_total)
 
+    def print_total_schedule(
+    #{{{
+        work_done_total,
+        start_of_time = 129,
+        end = 365):
+    
+        # present data (set size of data too)
+        bar_len = len("000:00:00 of expected 000 hours") + 1  # box line end
+    
+        presentation  = bar_len * "=" + "\n"
+        presentation += "Time worked this sector\n"
+        presentation += bar_len * "=" + "\n"
+    
+        for day in range(0,len(work_done_total)):
+            if work_done_total[day] > 0:#30 * 60:# skip low work days, 0: # skip no work days
+                presentation += daycal(day)
+                if work_done_total[day] < 10 * 60 * 60: # x < 10 hours -> space
+                    presentation += " "
+                presentation += (
+                    "   "
+                    + str(clock_sec(work_done_total[day]))
+                    + "    "
+                    + dots(work_done_total[day])
+                    + "|\n"
+                )
+    
+        presentation += bar_len * "=" + "\n"
+        presentation += (
+            str(clock_sec(sum(work_done_total)))
+            + " of expected "
+            + str(((is_today - start_of_time) * time_per_day))
+            + " hours\n"
+        )
+        presentation += bar_len * "="
+    
+        return presentation
+    #}}}
+
     return print_total_schedule(work_done_total)
 
 
 # }}}
 
+def week_schedule(work_categories=work_categories):
+    "create a chart for the last 7 noteworthy days"
+#{{{
+    week_len = 7
+    end_len = 3
 
-def day_schedule(semester=semester):
+    total_schedule_dat = ""
+    banner_len = 0
+    for t in total_schedule().split('\n')[-week_len-end_len:-end_len] :
+        banner_len = len(t) # not going to refactor.. Get over it
+        total_schedule_dat += t + '\n'
+    
+    week_dat = banner_len * '=' + '\n'
+    for t in total_schedule_dat :
+        week_dat += t
+    week_dat += banner_len * '='
+    
+    return week_dat
+            
+#}}}
+
+
+def day_schedule(work_categories=work_categories):
     """create a chart based on topics"""
     # {{{
     data = clean_data()
     temp = []
-    for s in semester:
+    for s in work_categories:
         temp.append(s.replace(" ", ""))
-    semester = temp[:]
+    work_categories = temp[:]
 
     # initial clean from c code
-    semester = pad_strings(semester)
+    work_categories = pad_strings(work_categories)
 
     # filter for 24hr interval
     today = []
@@ -200,9 +225,9 @@ def day_schedule(semester=semester):
     # select out data based on type of work
     work_done = []
     temp = 0
-    for j in range(len(semester)):
+    for j in range(len(work_categories)):
         for i in range(len(today)):
-            if semester[j] == today[i]["task"]:
+            if work_categories[j] == today[i]["task"]:
                 temp += (
                     (today[i]["hours"]) * 60 * 60
                     + (today[i]["minutes"]) * 60
@@ -211,11 +236,11 @@ def day_schedule(semester=semester):
         work_done.append(
             (
                 (
-                    str(semester[j])
+                    str(work_categories[j])
                     + " "
                     + clock_sec(temp)
                     + "/"
-                    + clock_hour(time_per_day / len(semester))
+                    + clock_hour(time_per_day / len(work_categories))
                 )
             )
         )
@@ -244,7 +269,7 @@ def day_schedule(semester=semester):
 
 def get_days_left():
     # {{{
-    chart = day_schedule(semester)
+    chart = day_schedule(work_categories)
     chart_lines = chart.split("\n")
     return chart_lines[0] + " "
 
@@ -254,7 +279,7 @@ def get_days_left():
 
 def get_main_task():
     # {{{
-    chart = day_schedule(semester)
+    chart = day_schedule(work_categories)
     chart_lines = chart.split("\n")
     return " " + chart_lines[3][:-6] + " "
 
@@ -284,5 +309,5 @@ def dots(sec, length=10):
 
 # tests should go here
 if __name__ == "__main__":
-    # print(day_schedule(semester))
+    # print(day_schedule(work_categories))
     1 + 1
